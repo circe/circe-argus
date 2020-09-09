@@ -3,6 +3,7 @@ package io.circe.argus.macros
 import io.circe.argus.schema._
 
 import scala.annotation.{StaticAnnotation, compileTimeOnly}
+import scala.io.Source
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
@@ -74,7 +75,7 @@ class SchemaMacros(val c: Context) {
   private val helpers = new ASTHelpers[c.universe.type](c.universe)
   import helpers._
 
-  case class Params(schema: Schema.Root, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
+  case class Params(schema: Schema.Root, rawSchema: String, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
                     outPathPackage: Option[String], name: String)
 
   private def extractParams(prefix: Tree): Params = {
@@ -84,26 +85,28 @@ class SchemaMacros(val c: Context) {
     val commonParams = ("debug", false) :: ("jsonEng", q"Some(JsonEngs.Circe)") :: ("outPath", None) ::
       ("outPathPackage", None) :: ("name", "Root") :: Nil
 
-    val params = fn match {
+    val (paramsWithoutSchema, schemaString)= fn match {
       case "fromSchemaResource" => {
         val params = paramsToMap(("path", "Path missing") :: commonParams, paramASTs)
-        params + ("schema" -> Schema.fromResource(params("path").asInstanceOf[String]))
+        (params, Source.fromInputStream(getClass.getResourceAsStream(params("path").asInstanceOf[String])).getLines().mkString("\n"))
       }
       case "fromSchemaURL" => {
         val params = paramsToMap(("url", "URL missing") :: commonParams, paramASTs)
-        params + ("schema" -> Schema.fromURL(params("url").asInstanceOf[String]))
+        (params, Source.fromURL(params("url").asInstanceOf[String]).getLines.mkString("\n"))
       }
 
       case "fromSchemaJson" => {
         val params = paramsToMap(("json", "Json missing") :: commonParams, paramASTs)
-        params + ("schema" -> Schema.fromJson(params("json").asInstanceOf[String]))
+        (params, params("json").asInstanceOf[String])
       }
 
       case _ => c.abort(c.enclosingPosition, "Didn't know annotation " + fn)
     }
+    val params = paramsWithoutSchema + ("schema" -> Schema.fromJson(schemaString)) + ("rawSchema" -> schemaString)
 
     Params(
       params("schema").asInstanceOf[Schema.Root],
+      params("rawSchema").asInstanceOf[String],
       params("debug").asInstanceOf[Boolean],
       params("jsonEng") match { case q"Some(JsonEngs.Circe)" => Some(JsonEngs.Circe); case q"None" => None },
       params("outPath").asInstanceOf[Option[String]],
@@ -146,6 +149,9 @@ class SchemaMacros(val c: Context) {
   def fromSchemaMacroImpl(annottees: c.Expr[Any]*): c.Expr[Any] = {
     val params = extractParams(c.prefix.tree)
     val schema = params.schema
+    val schemaString = params.rawSchema
+    val name = TypeName(params.name)
+    val hasSchemaInstanceName = TermName(params.name + "HasSchema")
 
     val result: Tree = annottees map (_.tree) match {
 
@@ -160,7 +166,10 @@ class SchemaMacros(val c: Context) {
 
             class enum extends scala.annotation.StaticAnnotation
             class union extends scala.annotation.StaticAnnotation
-
+            val schemaString = $schemaString.filter(_ != '\n')
+            implicit val $hasSchemaInstanceName: jsonschema.HasSchema[$name] = new jsonschema.HasSchema[$name] {
+                override val schema: String = schemaString
+            }
             ..$defs
             ..${ mkCodecs(params.jsonEnd, defs, tname.toString :: Nil) }
           }
