@@ -2,10 +2,12 @@
 
 [![TravisCI](https://travis-ci.org/circe/circe-argus.svg?branch=master)](https://travis-ci.org/circe/circe-argus)
 
-<img src="https://www.vegas-viz.org/images/argus-logo.png" width="170">
-
 Scala macros for generating code from [Json Schemas](http://json-schema.org). Any structures defined within the
 schema (such as properties, enums, etc) are used to generate scala code at compile time. Json encoder/decoders are also generated for the [Circe](https://github.com/travisbrown/circe) Json library.
+
+This repository is a temporary fork of [`aishfenton/Argus`](https://github.com/aishfenton/Argus).
+Artifacts from this repository are published into the `org.circe` group ID, and the root `argus` package
+has been moved into `io.circe`.
 
 **NB:**
 Why Argus? In keeping with the theme of Argonaut and Circe, Argus (son of Arestor) was the builder of the ship "Argo", 
