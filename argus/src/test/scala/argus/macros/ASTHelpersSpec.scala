@@ -1,4 +1,4 @@
-package argus.macros
+package io.circe.argus.macros
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

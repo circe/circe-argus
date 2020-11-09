@@ -1,6 +1,6 @@
-package argus.macros
+package io.circe.argus.macros
 
-import argus.json.JsonDiff
+import io.circe.argus.json.JsonDiff
 import org.scalactic.Equality
 import cats.syntax.either._
 import io.circe._

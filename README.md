@@ -1,6 +1,6 @@
 # Argus (船大工)
 
-[![TravisCI](https://travis-ci.org/aishfenton/Argus.svg?branch=master)](https://travis-ci.org/aishfenton/Argus)
+[![TravisCI](https://travis-ci.org/circe/circe-argus.svg?branch=master)](https://travis-ci.org/circe/circe-argus)
 
 <img src="https://www.vegas-viz.org/images/argus-logo.png" width="170">
 
@@ -48,7 +48,7 @@ Starting with this Json schema.
 We can use the @fromSchemaResource macro to generate case classes for (Root, Address)
 
 ```scala
-import argus.macros._
+import io.circe.argus.macros._
 import io.circe._
 import io.circe.syntax._
 

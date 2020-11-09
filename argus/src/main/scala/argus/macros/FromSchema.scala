@@ -1,6 +1,6 @@
-package argus.macros
+package io.circe.argus.macros
 
-import argus.schema._
+import io.circe.argus.schema._
 
 import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.language.experimental.macros

@@ -1,4 +1,4 @@
-package argus.macros
+package io.circe.argus.macros
 
 import org.scalactic.Equality
 import org.scalatest.matchers.{ MatchResult, Matcher }

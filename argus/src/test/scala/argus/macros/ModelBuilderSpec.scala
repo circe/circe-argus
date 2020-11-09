@@ -1,4 +1,4 @@
-package argus.macros
+package io.circe.argus.macros
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -10,7 +10,7 @@ class ModelBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
   import runtimeUniverse._
   val mb = new ModelBuilder[runtimeUniverse.type](runtimeUniverse)
-  import argus.schema.Schema._
+  import io.circe.argus.schema.Schema._
 
   "mkIntriniscType()" should "create types for basic types" in {
     mb.mkIntrinsicType(SimpleTypes.String, None) should === (tq"String")

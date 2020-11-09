@@ -1,4 +1,4 @@
-package argus.macros
+package io.circe.argus.macros
 
 import scala.reflect.api.Universe
 

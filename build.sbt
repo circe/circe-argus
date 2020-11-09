@@ -7,7 +7,7 @@ lazy val Vers = new {
 
 lazy val commonSettings = Seq(
   name := "Argus",
-  organization := "com.github.aishfenton",
+  organization := "io.circe",
   scalaVersion := "2.13.3",
   crossScalaVersions := Seq("2.12.12", "2.13.3"),
   scalacOptions ++= Seq("-target:jvm-1.8") ++ {
@@ -92,7 +92,7 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val argus = project
-  .settings(moduleName := "argus")
+  .settings(moduleName := "circe-argus")
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(

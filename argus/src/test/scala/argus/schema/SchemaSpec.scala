@@ -1,6 +1,6 @@
-package argus.schema
+package io.circe.argus.schema
 
-import argus.json.JsonDiff
+import io.circe.argus.json.JsonDiff
 import io.circe._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

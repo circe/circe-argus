@@ -1,4 +1,4 @@
-package argus.json
+package io.circe.argus.json
 
 import io.circe.Json
 import io.circe.Printer

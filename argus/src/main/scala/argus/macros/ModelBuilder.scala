@@ -1,7 +1,7 @@
-package argus.macros
+package io.circe.argus.macros
 
 import scala.language.experimental.macros
-import argus.schema._
+import io.circe.argus.schema._
 import scala.reflect.api.Universe
 
 /**

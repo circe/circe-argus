@@ -1,4 +1,4 @@
-package argus.schema
+package io.circe.argus.schema
 
 import java.io.InputStream
 

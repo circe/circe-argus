@@ -1,11 +1,11 @@
-package argus.macros
+package io.circe.argus.macros
 
 import java.io.File
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import argus.json.JsonDiff
-import argus.schema.Schema
+import io.circe.argus.json.JsonDiff
+import io.circe.argus.schema.Schema
 import cats.syntax.either._
 import io.circe._
 import io.circe.syntax._
