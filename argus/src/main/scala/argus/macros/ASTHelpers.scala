@@ -93,7 +93,7 @@ class ASTHelpers[U <: Universe](val u: U) {
     }.toList
 
     val name = RefNameExtractor.findFirstIn(ref).get
-    defPath :+ name
+    defPath :+ name.capitalize
   }
 
   /**
