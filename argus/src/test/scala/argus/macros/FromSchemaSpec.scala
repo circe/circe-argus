@@ -4,6 +4,7 @@ import java.io.File
 import java.time.ZonedDateTime
 import java.util.UUID
 
+import io.circe.argus.HasSchemaSource
 import io.circe.argus.json.JsonDiff
 import io.circe.argus.schema.Schema
 import cats.syntax.either._
@@ -612,8 +613,32 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     """, rawSchema = true)
     object Foo
 
-    Foo.rawSchema should === (expected)
+    Foo.schemaSource should === (expected)
   }
+
+  it should "generate HasSchemaSource instances" in {
+    val expected = """
+    {
+      "type": "object",
+      "properties": {
+        "name": { "type" : "string" }
+      }
+    }
+    """.filter(_ != '\n')
+
+    @fromSchemaJson("""
+    {
+      "type": "object",
+      "properties": {
+        "name": { "type" : "string" }
+      }
+    }
+    """, rawSchema = true, runtime = true)
+    object Foo
+
+    HasSchemaSource[Foo.Root].value should === (expected)
+  }
+
   "Complex example" should "work end to end" in {
     @fromSchemaResource("/vega-lite-schema.json")
     object Vega

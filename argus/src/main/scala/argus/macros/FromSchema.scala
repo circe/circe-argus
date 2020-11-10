@@ -24,10 +24,12 @@ object JsonEngs {
   *                       to the output file (defaults to None, so no package name is written).
   * @param name The name used for the root case class that is generated. Defaults to "Root"
   * @param rawSchema Includes the raw schema string in the companion object
+  * @param runtime Produces code for abstracting over Argus-generated types
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
-                     outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false) extends StaticAnnotation {
+                     outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
+                     runtime: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -43,10 +45,12 @@ class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonE
   *                       to the output file (defaults to None, so no package name is written).
   * @param name The name used for the root case class that is generated. Defaults to "Root"
   * @param rawSchema Includes the raw schema string in the companion object
+  * @param runtime Produces code for abstracting over Argus-generated types
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
-                         outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false) extends StaticAnnotation {
+                         outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
+                         runtime: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -62,10 +66,12 @@ class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[J
   *                       to the output file (defaults to None, so no package name is written).
   * @param name The name used for the root case class that is generated. Defaults to "Root"
   * @param rawSchema Includes the raw schema string in the companion object
+  * @param runtime Produces code for abstracting over Argus-generated types
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaURL(url: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String],
-                    outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false) extends StaticAnnotation {
+                    outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
+                    runtime: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -79,14 +85,15 @@ class SchemaMacros(val c: Context) {
   import helpers._
 
   case class Params(schema: Schema.Root, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
-                    outPathPackage: Option[String], name: String, rawSchema: Option[String])
+                    outPathPackage: Option[String], name: String, rawSchema: Option[String],
+                    runtime: Boolean = false)
 
   private def extractParams(prefix: Tree): Params = {
     val q"new $name (..$paramASTs)" = prefix
     val (Ident(TypeName(fn: String))) = name
 
     val commonParams = ("debug", false) :: ("jsonEng", q"Some(JsonEngs.Circe)") :: ("outPath", None) ::
-      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: Nil
+      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: Nil
 
     val (params, schemaString)= fn match {
       case "fromSchemaResource" => {
@@ -118,7 +125,8 @@ class SchemaMacros(val c: Context) {
       params("outPath").asInstanceOf[Option[String]],
       params("outPathPackage").asInstanceOf[Option[String]],
       params("name").asInstanceOf[String],
-      rawSchema
+      rawSchema,
+      params("runtime").asInstanceOf[Boolean]
     )
   }
 
@@ -163,11 +171,27 @@ class SchemaMacros(val c: Context) {
       // Add definitions and codecs to annotated object
       case (objDef @ q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$stats }") :: _ => {
 
-        val (_, defs) = modelBuilder.mkSchemaDef(params.name, schema)
+        val (rootTpe, defs) = modelBuilder.mkSchemaDef(params.name, schema)
 
         val rawSchemaDef = rawSchema.map { s =>
-          q"""val rawSchema: String = $s"""
+          q"""val schemaSource: String = $s"""
         }.toList
+
+        val runtimeDefs: List[Tree] = (
+          if (params.runtime && !rootTpe.isEmpty) {
+            rawSchema.map { s =>
+              val name = TypeName(params.name)
+              val hasSchemaSourceInstanceName = TermName(params.name + "HasSchemaSource")
+
+              q"""
+                implicit val $hasSchemaSourceInstanceName:  _root_.io.circe.argus.HasSchemaSource[$name] =
+                  _root_.io.circe.argus.HasSchemaSource.instance[$name]($s)
+              """
+            }
+          } else {
+            None
+          }
+        ).toList
 
         q"""
           $mods object $tname extends { ..$earlydefns } with ..$parents { $self =>
@@ -176,6 +200,7 @@ class SchemaMacros(val c: Context) {
             class enum extends scala.annotation.StaticAnnotation
             class union extends scala.annotation.StaticAnnotation
             ..$rawSchemaDef
+            ..$runtimeDefs
             ..$defs
             ..${ mkCodecs(params.jsonEnd, defs, tname.toString :: Nil) }
           }
