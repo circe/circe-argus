@@ -23,10 +23,11 @@ object JsonEngs {
   * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
   *                       to the output file (defaults to None, so no package name is written).
   * @param name The name used for the root case class that is generated. Defaults to "Root"
+  * @param rawSchema Includes the raw schema string in the companion object
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
-                     outPathPackage: Option[String] = None, name: String = "Root") extends StaticAnnotation {
+                     outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -41,10 +42,11 @@ class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonE
   * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
   *                       to the output file (defaults to None, so no package name is written).
   * @param name The name used for the root case class that is generated. Defaults to "Root"
+  * @param rawSchema Includes the raw schema string in the companion object
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
-                         outPathPackage: Option[String] = None, name: String = "Root") extends StaticAnnotation {
+                         outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -59,10 +61,11 @@ class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[J
   * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
   *                       to the output file (defaults to None, so no package name is written).
   * @param name The name used for the root case class that is generated. Defaults to "Root"
+  * @param rawSchema Includes the raw schema string in the companion object
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaURL(url: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String],
-                    outPathPackage: Option[String] = None, name: String = "Root") extends StaticAnnotation {
+                    outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -75,17 +78,17 @@ class SchemaMacros(val c: Context) {
   private val helpers = new ASTHelpers[c.universe.type](c.universe)
   import helpers._
 
-  case class Params(schema: Schema.Root, rawSchema: String, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
-                    outPathPackage: Option[String], name: String)
+  case class Params(schema: Schema.Root, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
+                    outPathPackage: Option[String], name: String, rawSchema: Option[String])
 
   private def extractParams(prefix: Tree): Params = {
     val q"new $name (..$paramASTs)" = prefix
     val (Ident(TypeName(fn: String))) = name
 
     val commonParams = ("debug", false) :: ("jsonEng", q"Some(JsonEngs.Circe)") :: ("outPath", None) ::
-      ("outPathPackage", None) :: ("name", "Root") :: Nil
+      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: Nil
 
-    val (paramsWithoutSchema, schemaString)= fn match {
+    val (params, schemaString)= fn match {
       case "fromSchemaResource" => {
         val params = paramsToMap(("path", "Path missing") :: commonParams, paramASTs)
         (params, Source.fromInputStream(getClass.getResourceAsStream(params("path").asInstanceOf[String])).getLines().mkString("\n"))
@@ -102,16 +105,20 @@ class SchemaMacros(val c: Context) {
 
       case _ => c.abort(c.enclosingPosition, "Didn't know annotation " + fn)
     }
-    val params = paramsWithoutSchema + ("schema" -> Schema.fromJson(schemaString)) + ("rawSchema" -> schemaString)
+    val rawSchema = if (params("rawSchema").asInstanceOf[Boolean]) {
+      Some(schemaString)
+    } else {
+      None
+    }
 
     Params(
-      params("schema").asInstanceOf[Schema.Root],
-      params("rawSchema").asInstanceOf[String],
+      Schema.fromJson(schemaString),
       params("debug").asInstanceOf[Boolean],
       params("jsonEng") match { case q"Some(JsonEngs.Circe)" => Some(JsonEngs.Circe); case q"None" => None },
       params("outPath").asInstanceOf[Option[String]],
       params("outPathPackage").asInstanceOf[Option[String]],
-      params("name").asInstanceOf[String]
+      params("name").asInstanceOf[String],
+      rawSchema
     )
   }
 
@@ -149,9 +156,7 @@ class SchemaMacros(val c: Context) {
   def fromSchemaMacroImpl(annottees: c.Expr[Any]*): c.Expr[Any] = {
     val params = extractParams(c.prefix.tree)
     val schema = params.schema
-    val schemaString = params.rawSchema
-    val name = TypeName(params.name)
-    val hasSchemaInstanceName = TermName(params.name + "HasSchema")
+    val rawSchema = params.rawSchema.map(_.filter(_ != '\n'))
 
     val result: Tree = annottees map (_.tree) match {
 
@@ -160,16 +165,17 @@ class SchemaMacros(val c: Context) {
 
         val (_, defs) = modelBuilder.mkSchemaDef(params.name, schema)
 
+        val rawSchemaDef = rawSchema.map { s =>
+          q"""val rawSchema: String = $s"""
+        }.toList
+
         q"""
           $mods object $tname extends { ..$earlydefns } with ..$parents { $self =>
             ..$stats
 
             class enum extends scala.annotation.StaticAnnotation
             class union extends scala.annotation.StaticAnnotation
-            val schemaString = $schemaString.filter(_ != '\n')
-            implicit val $hasSchemaInstanceName: jsonschema.HasSchema[$name] = new jsonschema.HasSchema[$name] {
-                override val schema: String = schemaString
-            }
+            ..$rawSchemaDef
             ..$defs
             ..${ mkCodecs(params.jsonEnd, defs, tname.toString :: Nil) }
           }
