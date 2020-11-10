@@ -592,6 +592,28 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     Schema.Person(age=Some(42)).age should === (Some(42))
   }
 
+  it should "support raw schema inclusion" in {
+    val expected = """
+    {
+      "definitions" : {
+        "SSN" : { "type": "string" },
+        "Names" : { "type": "array", "items": { "type": "string" } }
+      }
+    }
+    """.filter(_ != '\n')
+
+    @fromSchemaJson("""
+    {
+      "definitions" : {
+        "SSN" : { "type": "string" },
+        "Names" : { "type": "array", "items": { "type": "string" } }
+      }
+    }
+    """, rawSchema = true)
+    object Foo
+
+    Foo.rawSchema should === (expected)
+  }
   "Complex example" should "work end to end" in {
     @fromSchemaResource("/vega-lite-schema.json")
     object Vega
