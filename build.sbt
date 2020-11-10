@@ -105,9 +105,14 @@ lazy val argus = project
       "org.scalatest" %% "scalatest" % Vers.scalatest % Test
     )
   )
+  .dependsOn(runtime % Test)
+
+lazy val runtime = project
+  .settings(moduleName := "circe-argus-runtime")
+  .settings(commonSettings: _*)
 
 lazy val root = (project in file("."))
-  .aggregate(argus)
+  .aggregate(argus, runtime)
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
 
