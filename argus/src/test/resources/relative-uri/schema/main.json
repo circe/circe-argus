@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "description": "Example from Everit's tests",
+  "properties": {
+    "rect": {
+      "$ref": "props.json#/definitions/Rectangle"
+    }
+  }
+}
