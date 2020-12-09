@@ -136,7 +136,6 @@ class SchemaMacros(val c: Context) {
 
     // Clean up the code a little to make it more readable
     val code = packageCode + showCode(tree)
-      .replaceAll(",", ",\n")
       .replaceAll("\\.flatMap", "\n.flatMap")
 
     val file = new java.io.File(path)
