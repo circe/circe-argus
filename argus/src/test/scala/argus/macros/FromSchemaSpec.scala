@@ -156,8 +156,8 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     val string = Root.AddressString("Main St")
     val street = Root.AddressStreet(Street("1010 Main St"))
-    val _ = string: Root.AddressUnion
-    val _ = street: Root.AddressUnion
+    val stringAsUnion = string: Root.AddressUnion
+    val streetAsUnion = street: Root.AddressUnion
     Root(Some(street)).address.get match {
       case Root.AddressStreet(st: Street) => st === (Street("1010 Main St"));
       case _ => fail("Didn't match type")
@@ -190,8 +190,8 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     val string = Root.AddressString("Main St")
     val street = Root.AddressStreet(Street("1010 Main St"))
-    val _ = string: Root.Address
-    val _ = street: Root.Address
+    val stringAsUnion = string: Root.Address
+    val streetAsUnion = street: Root.Address
     Root(Some(street)).address.get match {
       case Root.AddressStreet(st: Street) => st === (Street("1010 Main St"));
       case _ => fail("Didn't match type")
