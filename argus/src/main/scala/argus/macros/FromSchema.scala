@@ -29,7 +29,7 @@ object JsonEngs {
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
                      outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                     runtime: Boolean = false) extends StaticAnnotation {
+                     runtime: Boolean = false, unionSuffix: Boolean = true) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -50,7 +50,7 @@ class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonE
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
                          outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                         runtime: Boolean = false) extends StaticAnnotation {
+                         runtime: Boolean = false, unionSuffix: Boolean = true) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -71,7 +71,7 @@ class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[J
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaURL(url: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String],
                     outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                    runtime: Boolean = false) extends StaticAnnotation {
+                    runtime: Boolean = false, unionSuffix: Boolean = true) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -86,14 +86,14 @@ class SchemaMacros(val c: Context) {
 
   case class Params(schema: Schema.Root, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
                     outPathPackage: Option[String], name: String, rawSchema: Option[String],
-                    runtime: Boolean = false)
+                    runtime: Boolean = false, unionSuffix: Boolean = true)
 
   private def extractParams(prefix: Tree): Params = {
     val q"new $name (..$paramASTs)" = prefix
     val (Ident(TypeName(fn: String))) = name
 
     val commonParams = ("debug", false) :: ("jsonEng", q"Some(JsonEngs.Circe)") :: ("outPath", None) ::
-      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: Nil
+      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: ("unionSuffix", true) :: Nil
 
     val (params, schemaString)= fn match {
       case "fromSchemaResource" => {
@@ -126,7 +126,8 @@ class SchemaMacros(val c: Context) {
       params("outPathPackage").asInstanceOf[Option[String]],
       params("name").asInstanceOf[String],
       rawSchema,
-      params("runtime").asInstanceOf[Boolean]
+      params("runtime").asInstanceOf[Boolean],
+      params("unionSuffix").asInstanceOf[Boolean]
     )
   }
 
@@ -171,7 +172,7 @@ class SchemaMacros(val c: Context) {
       // Add definitions and codecs to annotated object
       case (objDef @ q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$stats }") :: _ => {
 
-        val (rootTpe, defs) = modelBuilder.mkSchemaDef(params.name, schema)
+        val (rootTpe, defs) = modelBuilder.mkSchemaDef(params.name, schema, Nil, params.unionSuffix)
 
         val rawSchemaDef = rawSchema.map { s =>
           q"""val schemaSource: String = $s"""

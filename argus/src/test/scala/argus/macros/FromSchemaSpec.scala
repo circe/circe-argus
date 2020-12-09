@@ -156,6 +156,42 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     val string = Root.AddressString("Main St")
     val street = Root.AddressStreet(Street("1010 Main St"))
+    val _ = string: Root.AddressUnion
+    val _ = street: Root.AddressUnion
+    Root(Some(street)).address.get match {
+      case Root.AddressStreet(st: Street) => st === (Street("1010 Main St"));
+      case _ => fail("Didn't match type")
+    }
+  }
+
+  it should "build union types without Union suffix when configured" in {
+    @fromSchemaJson("""
+    {
+      "type" : "object",
+      "definitions": {
+        "Street": {
+          "type": "object",
+          "properties" : { "street" : { "type" : "string" } },
+          "required" : ["street"]
+        }
+      },
+      "properties": {
+        "address": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/definitions/Street" }
+          ]
+        }
+      }
+    }
+    """, unionSuffix = false)
+    object Foo
+    import Foo._
+
+    val string = Root.AddressString("Main St")
+    val street = Root.AddressStreet(Street("1010 Main St"))
+    val _ = string: Root.Address
+    val _ = street: Root.Address
     Root(Some(street)).address.get match {
       case Root.AddressStreet(st: Street) => st === (Street("1010 Main St"));
       case _ => fail("Didn't match type")
