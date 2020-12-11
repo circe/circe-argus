@@ -1,6 +1,7 @@
 # Argus (船大工)
 
-[![TravisCI](https://travis-ci.org/circe/circe-argus.svg?branch=master)](https://travis-ci.org/circe/circe-argus)
+[![Build status](https://img.shields.io/github/workflow/status/circe/circe-argus/Continuous%20Integration.svg)](https://github.com/circe/circe-argus/actions)
+[![Maven Central](https://img.shields.io/maven-central/v/io.circe/circe-argus_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/io.circe/circe-argus_2.13)
 
 Scala macros for generating code from [Json Schemas](http://json-schema.org). Any structures defined within the
 schema (such as properties, enums, etc) are used to generate scala code at compile time. Json encoder/decoders are also generated for the [Circe](https://github.com/travisbrown/circe) Json library.
