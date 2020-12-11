@@ -634,7 +634,8 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     {
       "definitions" : {
         "SSN" : { "type": "string" },
-        "Names" : { "type": "array", "items": { "type": "string" } }
+        "Names" : { "type": "array", "items": { "type": "string" } },
+        "Other": { "type": "object", "properties": { "id": { "type": "string" } } }
       }
     }
     """.filter(_ != '\n')
@@ -643,7 +644,8 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     {
       "definitions" : {
         "SSN" : { "type": "string" },
-        "Names" : { "type": "array", "items": { "type": "string" } }
+        "Names" : { "type": "array", "items": { "type": "string" } },
+        "Other": { "type": "object", "properties": { "id": { "type": "string" } } }
       }
     }
     """, rawSchema = true)
