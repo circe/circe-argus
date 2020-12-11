@@ -1,5 +1,22 @@
 import ReleaseTransformations._
 
+crossScalaVersions in ThisBuild := Seq("2.12.12", "2.13.4")
+scalaVersion in ThisBuild := crossScalaVersions.value.last
+githubWorkflowJavaVersions in ThisBuild := Seq("adopt@1.8")
+githubWorkflowPublishTargetBranches in ThisBuild := Nil
+githubWorkflowBuild in ThisBuild := Seq(
+  WorkflowStep.Sbt(
+    List("clean", "coverage", "test", "coverageReport"),
+    id = None,
+    name = Some("test")
+  ),
+  WorkflowStep.Use(
+    "codecov",
+    "codecov-action",
+    "v1"
+  )
+)
+
 lazy val Vers = new {
   val circe = "0.13.0"
   val scalatest = "3.2.0"
@@ -8,8 +25,6 @@ lazy val Vers = new {
 lazy val commonSettings = Seq(
   name := "Argus",
   organization := "io.circe",
-  scalaVersion := "2.13.3",
-  crossScalaVersions := Seq("2.12.12", "2.13.3"),
   scalacOptions ++= Seq("-target:jvm-1.8") ++ {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => Seq("-Ymacro-annotations")
