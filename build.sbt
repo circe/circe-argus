@@ -1,5 +1,20 @@
 import ReleaseTransformations._
 
+githubWorkflowJavaVersions in ThisBuild := Seq("adopt@1.8")
+githubWorkflowPublishTargetBranches in ThisBuild := Nil
+githubWorkflowBuild in ThisBuild := Seq(
+  WorkflowStep.Sbt(
+    List("clean", "coverage", "test", "coverageReport"),
+    id = None,
+    name = Some("test")
+  ),
+  WorkflowStep.Use(
+    "codecov",
+    "codecov-action",
+    "v1"
+  )
+)
+
 lazy val Vers = new {
   val circe = "0.13.0"
   val scalatest = "3.2.0"
