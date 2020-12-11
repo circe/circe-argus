@@ -1,6 +1,7 @@
 # Argus (船大工)
 
 [![Build status](https://img.shields.io/github/workflow/status/circe/circe-argus/Continuous%20Integration.svg)](https://github.com/circe/circe-argus/actions)
+[![Coverage status](https://img.shields.io/codecov/c/github/circe/circe-argus/master.svg)](https://codecov.io/github/circe/circe-argus)
 [![Maven Central](https://img.shields.io/maven-central/v/io.circe/circe-argus_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/io.circe/circe-argus_2.13)
 
 Scala macros for generating code from [Json Schemas](http://json-schema.org). Any structures defined within the
