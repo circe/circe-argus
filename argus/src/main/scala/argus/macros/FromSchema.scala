@@ -25,11 +25,15 @@ object JsonEngs {
   * @param name The name used for the root case class that is generated. Defaults to "Root"
   * @param rawSchema Includes the raw schema string in the companion object
   * @param runtime Produces code for abstracting over Argus-generated types
+  * @param unionSuffix Indicates whether generated union type names should be
+  *                    suffixed with "Union".
+  * @param splitOnUnderscore Indicates whether generated names should treat
+  *                          underscores as token characters or split on them.
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
                      outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                     runtime: Boolean = false, unionSuffix: Boolean = true) extends StaticAnnotation {
+                     runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -46,11 +50,15 @@ class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonE
   * @param name The name used for the root case class that is generated. Defaults to "Root"
   * @param rawSchema Includes the raw schema string in the companion object
   * @param runtime Produces code for abstracting over Argus-generated types
+  * @param unionSuffix Indicates whether generated union type names should be
+  *                    suffixed with "Union".
+  * @param splitOnUnderscore Indicates whether generated names should treat
+  *                          underscores as token characters or split on them.
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
                          outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                         runtime: Boolean = false, unionSuffix: Boolean = true) extends StaticAnnotation {
+                         runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -67,11 +75,15 @@ class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[J
   * @param name The name used for the root case class that is generated. Defaults to "Root"
   * @param rawSchema Includes the raw schema string in the companion object
   * @param runtime Produces code for abstracting over Argus-generated types
+  * @param unionSuffix Indicates whether generated union type names should be
+  *                    suffixed with "Union".
+  * @param splitOnUnderscore Indicates whether generated names should treat
+  *                          underscores as token characters or split on them.
   */
 @compileTimeOnly("You must enable the macro paradise plugin.")
 class fromSchemaURL(url: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String],
                     outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                    runtime: Boolean = false, unionSuffix: Boolean = true) extends StaticAnnotation {
+                    runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
@@ -86,14 +98,14 @@ class SchemaMacros(val c: Context) {
 
   case class Params(schema: Schema.Root, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
                     outPathPackage: Option[String], name: String, rawSchema: Option[String],
-                    runtime: Boolean = false, unionSuffix: Boolean = true)
+                    runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false)
 
   private def extractParams(prefix: Tree): Params = {
     val q"new $name (..$paramASTs)" = prefix
     val (Ident(TypeName(fn: String))) = name
 
     val commonParams = ("debug", false) :: ("jsonEng", q"Some(JsonEngs.Circe)") :: ("outPath", None) ::
-      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: ("unionSuffix", true) :: Nil
+      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: ("unionSuffix", true) :: ("splitOnUnderscore", false) :: Nil
 
     val (params, schemaString)= fn match {
       case "fromSchemaResource" => {
@@ -127,7 +139,8 @@ class SchemaMacros(val c: Context) {
       params("name").asInstanceOf[String],
       rawSchema,
       params("runtime").asInstanceOf[Boolean],
-      params("unionSuffix").asInstanceOf[Boolean]
+      params("unionSuffix").asInstanceOf[Boolean],
+      params("splitOnUnderscore").asInstanceOf[Boolean]
     )
   }
 
@@ -171,7 +184,7 @@ class SchemaMacros(val c: Context) {
       // Add definitions and codecs to annotated object
       case (objDef @ q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$stats }") :: _ => {
 
-        val (rootTpe, defs) = modelBuilder.mkSchemaDef(params.name, schema, Nil, params.unionSuffix)
+        val (rootTpe, defs) = modelBuilder.mkSchemaDef(params.name, schema, Nil, params.unionSuffix, params.splitOnUnderscore)
 
         val rawSchemaDef = rawSchema.map { s =>
           q"""val schemaSource: String = $s"""
