@@ -44,7 +44,7 @@ class ModelBuilder[U <: Universe](val u: U) {
     * Main workhorse. Creates case-classes from given fields.
     */
   def mkCaseClassDef(path: List[String], name: String, fields: List[Field],
-                     requiredFields: Option[List[String]], unionSuffix: Boolean = true): (Tree, List[Tree]) = {
+                     requiredFields: Option[List[String]], unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): (Tree, List[Tree]) = {
 
     // Build val defs for each field in case class, keeping track of new class defs created along the way (for nested
     // types
@@ -54,11 +54,11 @@ class ModelBuilder[U <: Universe](val u: U) {
 
       val enums = field.schema.enum.getOrElse(List())
       val defval: Option[Select] = if (enums.length == 1) 
-          Some(enumName(name, field.name, enums.head))
+          Some(enumName(name, field.name, enums.head, splitOnUnderscore))
         else 
           None
 
-      val (valDef, defDef) = mkValDef(path :+ name, field, optional, defval, unionSuffix)
+      val (valDef, defDef) = mkValDef(path :+ name, field, optional, defval, unionSuffix, splitOnUnderscore)
       (valDefs :+ valDef, defDefs ++ defDef)
     }
 
@@ -81,12 +81,12 @@ class ModelBuilder[U <: Universe](val u: U) {
     * @param enum List of all possible enum values (encoded as a string containing their json representation)
     * @return List[Tree] containing all the definitions
     */
-  def mkEnumDef(path: List[String], baseName: String, enum: List[String]): (Tree, List[Tree]) = {
+  def mkEnumDef(path: List[String], baseName: String, enum: List[String], splitOnUnderscore: Boolean = false): (Tree, List[Tree]) = {
     val baseTyp = TypeName(baseName)
     val baseDef = q"@enum sealed trait $baseTyp extends scala.Product with scala.Serializable { def json: String }"
 
     val memberDefs = enum.map { m =>
-      val name = TermName(nameFromJson(m))
+      val name = TermName(nameFromJson(m, splitOnUnderscore))
       q"case object $name extends $baseTyp { val json: String = $m }"
     }
 
@@ -99,8 +99,8 @@ class ModelBuilder[U <: Universe](val u: U) {
   /**
     * The fully-qualified name of an enum case.
     */
-  def enumName(ownerName: String, fieldName: String, caseName: String): Select = {
-    Select(Select(Ident(TermName(ownerName)), TermName(fieldName.capitalize + "Enums")), TermName(nameFromJson(caseName)))
+  def enumName(ownerName: String, fieldName: String, caseName: String, splitOnUnderscore: Boolean): Select = {
+    Select(Select(Ident(TermName(ownerName)), TermName(fieldName.capitalize + "Enums")), TermName(nameFromJson(caseName, splitOnUnderscore)))
   }
 
   /**
@@ -112,7 +112,7 @@ class ModelBuilder[U <: Universe](val u: U) {
     * @param schemas A list of allowed sub-types
     * @return A list of definitions created to support the union type.
     */
-  def mkUnionTypeDef(path: List[String], baseName: String, schemas: List[Root], unionSuffix: Boolean = true): (Tree, List[Tree]) = {
+  def mkUnionTypeDef(path: List[String], baseName: String, schemas: List[Root], unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): (Tree, List[Tree]) = {
     val baseTyp = TypeName(baseName + (if (unionSuffix) "Union" else ""))
     val baseDef = q"@union sealed trait $baseTyp extends scala.Product with scala.Serializable"
 
@@ -122,7 +122,7 @@ class ModelBuilder[U <: Universe](val u: U) {
         // Hopefully we don't have to use this, but if one of the schema's is an anonymous type then we don't have much
         // choice
         val defaultName = baseName + (i + 1).toString
-        val (typ, defs) = mkType(path, schema, defaultName)
+        val (typ, defs) = mkType(path, schema, defaultName, splitOnUnderscore)
 
         // E.g. FooInt
         val name = TypeName(baseName + nameFromType(typ, false))
@@ -148,7 +148,7 @@ class ModelBuilder[U <: Universe](val u: U) {
     *   - schmea.typ.array, creates an array based on the type defined within schema.items
     *   - schema.typ.List[st], ???
     */
-  def mkDef(path: List[String], name: String, schema: Root, unionSuffix: Boolean = true): (Tree, List[Tree]) = {
+  def mkDef(path: List[String], name: String, schema: Root, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): (Tree, List[Tree]) = {
     (schema.$ref, schema.enum, schema.typ,  schema.oneOf, schema.multiOf) match {
 
       // Refs
@@ -159,17 +159,17 @@ class ModelBuilder[U <: Universe](val u: U) {
 
       // Enums
       case (_,Some(enum),_,_,_) => {
-        mkEnumDef(path, name, enum)
+        mkEnumDef(path, name, enum, splitOnUnderscore)
       }
 
       // Object (which defines a case-class)
       case (_,_,Some(SimpleTypeTyp(SimpleTypes.Object)),_,_) => {
-        mkCaseClassDef(path, name, schema.properties.get, schema.required, unionSuffix)
+        mkCaseClassDef(path, name, schema.properties.get, schema.required, unionSuffix, splitOnUnderscore)
       }
 
       // Array, create type alias to List of type defined by schema.items (which itself is a schema)
       case (_,_,Some(SimpleTypeTyp(SimpleTypes.Array)),_,_) => {
-        val (toType, arrayDefs) = mkType(path, schema, name + "Item")
+        val (toType, arrayDefs) = mkType(path, schema, name + "Item", splitOnUnderscore)
         val (typ, aliasDefs) = mkTypeAlias(path, name, toType)
         (typ, arrayDefs ++ aliasDefs)
       }
@@ -181,7 +181,7 @@ class ModelBuilder[U <: Universe](val u: U) {
 
       // OneOfs (aka Union types)
       case (_,_,_,Some(schemas),_) => {
-        mkUnionTypeDef(path, name, schemas, unionSuffix)
+        mkUnionTypeDef(path, name, schemas, unionSuffix, splitOnUnderscore)
       }
 
       // AnyOfs and AllOfs (aka List of type)
@@ -212,11 +212,11 @@ class ModelBuilder[U <: Universe](val u: U) {
     * @return A tuple containing the Ident of the type, and a Tree of any addition class definitions
     *         that needed to be generated.
     */
-  def mkType(path: List[String], schema: Root, defaultName: String, unionSuffix: Boolean = true): (Tree, List[Tree]) = {
+  def mkType(path: List[String], schema: Root, defaultName: String, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): (Tree, List[Tree]) = {
 
     // Types are a bit strange. They are type definitions and schemas. We extract any inner /definitions
     // and embed those
-    val (_, defDefs) = mkSchemaDef(defaultName, schema.justDefinitions, path, unionSuffix)
+    val (_, defDefs) = mkSchemaDef(defaultName, schema.justDefinitions, path, unionSuffix, splitOnUnderscore)
 
     // If references existing schema, use that instead
     (schema.typ, schema.$ref, schema.enum, schema.oneOf, schema.multiOf) match {
@@ -242,7 +242,7 @@ class ModelBuilder[U <: Universe](val u: U) {
             throw new Exception("Array types must have an items property within the schema. " + schema)
         }
 
-        val (typ, itemDefs) = mkType(path, itemsSchema, defaultName, unionSuffix)
+        val (typ, itemDefs) = mkType(path, itemsSchema, defaultName, unionSuffix, splitOnUnderscore)
         (inList(typ), defDefs ++ itemDefs)
       }
 
@@ -258,7 +258,7 @@ class ModelBuilder[U <: Universe](val u: U) {
            | (_,_,_,_,Some(_)) => {
 
         // NB: We ignore defDefs here since we're re-calling mkSchema
-        mkSchemaDef(defaultName, schema, path, unionSuffix)
+        mkSchemaDef(defaultName, schema, path, unionSuffix, splitOnUnderscore)
       }
 
       // If not type info specified then we have no option but to make it a map of strings (field names) to anys (values)
@@ -289,10 +289,10 @@ class ModelBuilder[U <: Universe](val u: U) {
     * Makes a value definition (e.g. val i: Int). These are used for constructing parameter lists
     * and declaring local objects
     */
-  def mkValDef(path: List[String], field: Field, optional: Boolean, defval: Option[Select] = None, unionSuffix: Boolean = true): (ValDef, List[Tree]) = {
+  def mkValDef(path: List[String], field: Field, optional: Boolean, defval: Option[Select] = None, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): (ValDef, List[Tree]) = {
     val schema = field.schema
 
-    val (typ, defs) = mkType(path, schema, field.name.capitalize, unionSuffix)
+    val (typ, defs) = mkType(path, schema, field.name.capitalize, unionSuffix, splitOnUnderscore)
 
     val valDef = (if (optional) {
       val dval = defval.map({ x => q"Some(${x})" }).getOrElse(q"None")
@@ -322,17 +322,17 @@ class ModelBuilder[U <: Universe](val u: U) {
     * @param path A package path for where this is defined. Defaults to Nil.
     * @return A tuple containing the type of the root element that is generated, and all definitions required to support it
     */
-  def mkSchemaDef(name: String, schema: Root, path: List[String] = Nil, unionSuffix: Boolean = true): (Tree, List[Tree]) = {
+  def mkSchemaDef(name: String, schema: Root, path: List[String] = Nil, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): (Tree, List[Tree]) = {
     // Make definitions
     val fieldDefs = for {
       fields <- schema.definitions.toList
       field <- fields
-      (_, defDefs) = mkSchemaDef(field.name.capitalize, field.schema, path, unionSuffix)
+      (_, defDefs) = mkSchemaDef(field.name.capitalize, field.schema, path, unionSuffix, splitOnUnderscore)
       defDef <- defDefs
     } yield defDef
 
     // Make root
-    val (typ, rootDefs) = mkDef(path, name, schema, unionSuffix)
+    val (typ, rootDefs) = mkDef(path, name, schema, unionSuffix, splitOnUnderscore)
 
     (typ, fieldDefs ++ rootDefs)
   }

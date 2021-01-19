@@ -64,9 +64,9 @@ class ASTHelpers[U <: Universe](val u: U) {
     * it's more complex then the property names from json structure are used to build a name. If the json object
     * is a number then decimial points are stripped, and "n" is prefixed (i.e. 3.14 => n314).
     */
-  def nameFromJson(json: String): String = {
+  def nameFromJson(json: String, splitOnUnderscore: Boolean = false): String = {
     val res = json
-      .split("[^A-Za-z0-9_]+")
+      .split(if (splitOnUnderscore) "[^A-Za-z0-9]+" else "[^A-Za-z0-9_]+")
       .filterNot(_.isEmpty)
       .map(_.capitalize)
       .mkString

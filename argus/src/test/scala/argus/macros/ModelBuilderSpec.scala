@@ -128,6 +128,16 @@ class ModelBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
     names should === (List("AlbertBerty", "A1031437e5", "ABC"))
   }
 
+  it should "use PascalCase when configured with splitOnUnderscore (with the raw json included within)" in {
+    val enums = List("abc", "def_ghijk", "mn_opq1_rstu2")
+    val (_, res) = mb.mkEnumDef(Nil, "Foo", enums, splitOnUnderscore = true)
+
+    val q"object FooEnums { ..$defs }" = res(1)
+    val names = defs map { case q"case object $name extends Foo { $_ }" => name } map(_.toString)
+
+    names should === (List("Abc", "DefGhijk", "MnOpq1Rstu2"))
+  }
+
   "mkUnionType()" should "make a type (sealed trait + sub-classes) to represent union types" in {
     val union = schemaFromSimpleType(SimpleTypes.Integer) :: schemaFromSimpleType(SimpleTypes.String) :: Nil
     val (typ, res) = mb.mkUnionTypeDef("Foo" :: Nil, "Bar", union)

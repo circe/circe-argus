@@ -130,6 +130,22 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     owner = owner.copy(pet = Dog())
   }
 
+  it should "build enum types configured with splitOnUnderscore" in {
+    @fromSchemaJson("""
+    {
+      "type": "object",
+      "properties": {
+        "country": { "enum": ["abc", "def_ghijk", "mn_opq1_rstu2"] }
+      }
+    }
+    """, splitOnUnderscore = true)
+    object Foo
+    import Foo._
+
+    val root = Root(Some(Root.CountryEnums.DefGhijk))
+    root.country should === (Some(Root.CountryEnums.DefGhijk))
+  }
+
   it should "build union types" in {
     @fromSchemaJson("""
     {
