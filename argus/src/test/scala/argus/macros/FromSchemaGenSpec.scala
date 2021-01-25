@@ -21,14 +21,43 @@ class FromSchemaGenSpec extends AnyFlatSpec with Matchers {
       """,
       "Foo",
       None,
-      Some("mypackage")
+      Some("mypackage"),
+      rawSchema = true,
+      runtime = true
     )
 
-    val expected = """|package mypackage;
+    val triple = "\"\"\""
+    val expected = s"""|package mypackage;
                       |
                       |object Foo {
                       |  class enum extends scala.annotation.StaticAnnotation;
                       |  class union extends scala.annotation.StaticAnnotation;
+                      |  val schemaSource: String = $triple
+                      |      {
+                      |        "type": "object",
+                      |        "properties": {
+                      |          "a": {
+                      |            "type": "object",
+                      |            "properties": {
+                      |              "b" : { "type": "string" }
+                      |            }
+                      |          }
+                      |        }
+                      |      }
+                      |      $triple;
+                      |  implicit val RootHasSchemaSource: _root_.io.circe.argus.HasSchemaSource[Root] = _root_.io.circe.argus.HasSchemaSource.instance[Root]($triple
+                      |      {
+                      |        "type": "object",
+                      |        "properties": {
+                      |          "a": {
+                      |            "type": "object",
+                      |            "properties": {
+                      |              "b" : { "type": "string" }
+                      |            }
+                      |          }
+                      |        }
+                      |      }
+                      |      $triple);
                       |  case class Root(a: Option[Root.A] = None);
                       |  object Root {
                       |    case class A(b: Option[String] = None)
