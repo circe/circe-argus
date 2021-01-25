@@ -11,8 +11,9 @@ private[macros] object AnyDecoder {
         case n if n.isNumber =>  n.as[Double]
         case b if b.isBoolean => b.as[Boolean]
         case s if s.isString =>  s.as[String]
-        case o if o.isObject =>  o.as[Map[String, Any]](Decoder.decodeMapLike(KeyDecoder.decodeKeyString, anyDecoder, Map.canBuildFrom))
-        case a if a.isArray =>   a.as[List[Any]](Decoder.decodeIterable(anyDecoder, List.canBuildFrom[Any]))
+        case o if o.isObject =>
+          o.as[Map[String, Any]](Decoder.decodeMapLike[String, Any, Map](KeyDecoder.decodeKeyString, anyDecoder, implicitly))
+        case a if a.isArray =>   a.as[List[Any]](Decoder.decodeList[Any](anyDecoder))
       })
     """
   }
