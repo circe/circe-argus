@@ -96,7 +96,7 @@ class SchemaMacros(val c: Context) {
   private val helpers = new ASTHelpers[c.universe.type](c.universe)
   import helpers._
 
-  case class Params(schema: Schema.Root, debug: Boolean, jsonEnd: Option[JsonEng], outPath: Option[String],
+  case class Params(schema: Schema.Root, debug: Boolean, jsonEng: Option[JsonEng], outPath: Option[String],
                     outPathPackage: Option[String], name: String, rawSchema: Option[String],
                     runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false)
 
@@ -215,7 +215,7 @@ class SchemaMacros(val c: Context) {
             ..$rawSchemaDef
             ..$runtimeDefs
             ..$defs
-            ..${ mkCodecs(params.jsonEnd, defs, tname.toString :: Nil) }
+            ..${ mkCodecs(params.jsonEng, defs, tname.toString :: Nil) }
           }
         """
       }
@@ -230,5 +230,70 @@ class SchemaMacros(val c: Context) {
     c.Expr[Any](result)
   }
 
+}
+
+object FromSchemaGen extends ModelBuilder[scala.reflect.api.JavaUniverse](scala.reflect.runtime.universe) {
+  private val codecBuilder = new CirceCodecBuilder[u.type](u)
+
+  import u._
+
+  def fromJsonString(schemaString: String, objectName: String, jsonEng: Option[JsonEng] = None,
+               outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
+               runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): String = {
+
+    val schema = Schema.fromJson(schemaString)
+    val (rootTpe, defs) = mkSchemaDef(name, schema, Nil, unionSuffix, splitOnUnderscore)
+
+    val rawSchemaDef = if (rawSchema) {
+      List(q"""val schemaSource: String = $schemaString""")
+    } else {
+      Nil
+    }
+
+    val runtimeDefs: List[Tree] = if (runtime && !rootTpe.isEmpty && rawSchema) {
+      val typeName = TypeName(name)
+      val hasSchemaSourceInstanceName = TermName(typeName + "HasSchemaSource")
+
+      List(
+        q"""
+          implicit val $hasSchemaSourceInstanceName:  _root_.io.circe.argus.HasSchemaSource[$typeName] =
+            _root_.io.circe.argus.HasSchemaSource.instance[$typeName]($schemaString)
+        """
+      )
+    } else {
+      Nil
+    }
+
+    val tree = q"""
+      object ${TermName(objectName)} {
+        class enum extends scala.annotation.StaticAnnotation
+        class union extends scala.annotation.StaticAnnotation
+        ..$rawSchemaDef
+        ..$runtimeDefs
+        ..$defs
+        ..${ mkCodecs(jsonEng, defs, objectName :: Nil) }
+      }
+    """
+
+    val packageCode = outPathPackage.map(pn => s"package $pn;\n\n").getOrElse("")
+
+    // Clean up the code a little to make it more readable
+    packageCode + showCode(tree).replaceAll("\\.flatMap", "\n.flatMap")
+  }
+
+  private def mkCodecs(jsonEng: Option[JsonEng], defs: List[Tree], path: List[String]): List[Tree] = {
+    val codecDefs = jsonEng match {
+      case Some(JsonEngs.Circe) => codecBuilder.mkCodec(defs, path)
+      case None => Nil
+      case a@_ => throw new Exception("Don't know JsonEng " + a)
+    }
+
+    if (codecDefs.isEmpty)
+      Nil
+    else
+      q"trait LowPriorityImplicits { ..$codecDefs }" ::
+        q"object Implicits extends LowPriorityImplicits" ::
+        Nil
+  }
 }
 
