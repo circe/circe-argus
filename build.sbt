@@ -1,6 +1,6 @@
 import ReleaseTransformations._
 
-crossScalaVersions in ThisBuild := Seq("2.12.12", "2.13.4")
+crossScalaVersions in ThisBuild := Seq("2.12.14", "2.13.4")
 scalaVersion in ThisBuild := crossScalaVersions.value.last
 githubWorkflowJavaVersions in ThisBuild := Seq("adopt@1.8")
 githubWorkflowPublishTargetBranches in ThisBuild := Nil
