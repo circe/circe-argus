@@ -1,6 +1,6 @@
 import ReleaseTransformations._
 
-crossScalaVersions in ThisBuild := Seq("2.12.12", "2.13.4")
+crossScalaVersions in ThisBuild := Seq("2.12.12", "2.13.6")
 scalaVersion in ThisBuild := crossScalaVersions.value.last
 githubWorkflowJavaVersions in ThisBuild := Seq("adopt@1.8")
 githubWorkflowPublishTargetBranches in ThisBuild := Nil
@@ -19,7 +19,7 @@ githubWorkflowBuild in ThisBuild := Seq(
 
 lazy val Vers = new {
   val circe = "0.13.0"
-  val scalatest = "3.2.0"
+  val scalatest = "3.2.9"
 }
 
 lazy val commonSettings = Seq(
