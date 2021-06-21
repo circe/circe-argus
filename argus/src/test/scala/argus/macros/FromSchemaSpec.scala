@@ -42,11 +42,11 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     object Foo
     import Foo._
 
-    val address = new Address(number=Some(101), street=Some("Main St"))
+    val address = new Address(number = Some(101), street = Some("Main St"))
     val root = new Root("Fred", Some(address), Some("107-245"))
-    root.name should === ("Fred")
-    root.address should === (Some(Address(Some(101), Some("Main St"))))
-    root.ssn should === (Some("107-245"))
+    root.name should ===("Fred")
+    root.address should ===(Some(Address(Some(101), Some("Main St"))))
+    root.ssn should ===(Some("107-245"))
   }
 
   it should "build nested schemas (and name them after the field name)" in {
@@ -67,7 +67,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     import Foo._
 
     val a = Root.A(Some("bar"))
-    Root(Some(a)).a.get.b.get should === ("bar")
+    Root(Some(a)).a.get.b.get should ===("bar")
   }
 
   it should "build enum types" in {
@@ -83,7 +83,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     import Foo._
 
     val root = Root(Some(Root.CountryEnums.NZ))
-    root.country should === (Some(Root.CountryEnums.NZ))
+    root.country should ===(Some(Root.CountryEnums.NZ))
   }
 
   it should "build single-value enum types" in {
@@ -138,12 +138,14 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
         "country": { "enum": ["abc", "def_ghijk", "mn_opq1_rstu2"] }
       }
     }
-    """, splitOnUnderscore = true)
+    """,
+                    splitOnUnderscore = true
+    )
     object Foo
     import Foo._
 
     val root = Root(Some(Root.CountryEnums.DefGhijk))
-    root.country should === (Some(Root.CountryEnums.DefGhijk))
+    root.country should ===(Some(Root.CountryEnums.DefGhijk))
   }
 
   it should "build union types" in {
@@ -176,7 +178,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     val streetAsUnion = street: Root.AddressUnion
     Root(Some(street)).address.get match {
       case Root.AddressStreet(st: Street) => st === (Street("1010 Main St"));
-      case _ => fail("Didn't match type")
+      case _                              => fail("Didn't match type")
     }
   }
 
@@ -200,7 +202,9 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
         }
       }
     }
-    """, unionSuffix = false)
+    """,
+                    unionSuffix = false
+    )
     object Foo
     import Foo._
 
@@ -210,7 +214,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     val streetAsUnion = street: Root.Address
     Root(Some(street)).address.get match {
       case Root.AddressStreet(st: Street) => st === (Street("1010 Main St"));
-      case _ => fail("Didn't match type")
+      case _                              => fail("Didn't match type")
     }
   }
 
@@ -241,9 +245,9 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     val ed1 = Editor(Some("Bob"), Some("CA"))
     val ed2 = Editor(Some("Jill"), Some("NY"))
-    val root = Root(people=Some(List(ed1, ed2)), days=Some(List("Mon", "Fri")))
-    root.people should === (Some(List(ed1, ed2)))
-    root.days should === (Some(List("Mon", "Fri")))
+    val root = Root(people = Some(List(ed1, ed2)), days = Some(List("Mon", "Fri")))
+    root.people should ===(Some(List(ed1, ed2)))
+    root.days should ===(Some(List("Mon", "Fri")))
   }
 
   it should "build type alias's for simple definitions" in {
@@ -263,7 +267,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
   }
 
   "Building Circe Codecs" should "encode case classes" in {
-    @fromSchemaResource("/simple.json", jsonEng=Some(JsonEngs.Circe))
+    @fromSchemaResource("/simple.json", jsonEng = Some(JsonEngs.Circe))
     object Foo
     import Foo._
     import Foo.Implicits._
@@ -271,16 +275,16 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     val address = Address(Some(31), Some("Main St"))
     val root = Root(Some(List("Bob", "Smith")), Some(26), Some(address), Some(123))
 
-    root.asJson should beSameJsonAs ("""
-      |{
-      |  "name" : [ "Bob", "Smith" ],
-      |  "age" : 26,
-      |  "address" : {
-      |    "number" : 31,
-      |    "street" : "Main St"
-      |  },
-      |  "erdosNumber": 123
-      |}
+    root.asJson should beSameJsonAs("""
+                                      |{
+                                      |  "name" : [ "Bob", "Smith" ],
+                                      |  "age" : 26,
+                                      |  "address" : {
+                                      |    "number" : 31,
+                                      |    "street" : "Main St"
+                                      |  },
+                                      |  "erdosNumber": 123
+                                      |}
     """.stripMargin)
   }
 
@@ -291,21 +295,21 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     import Foo.Implicits._
 
     val json = """
-      |{
-      |  "name" : [ "Bob", "Smith" ],
-      |  "age" : 26,
-      |  "address" : {
-      |    "number" : 31,
-      |    "street" : "Main St"
-      |  },
-      |  "erdosNumber": 123
-      |}
+                 |{
+                 |  "name" : [ "Bob", "Smith" ],
+                 |  "age" : 26,
+                 |  "address" : {
+                 |    "number" : 31,
+                 |    "street" : "Main St"
+                 |  },
+                 |  "erdosNumber": 123
+                 |}
     """.stripMargin
     val root = parser.decode[Root](json).toOption.get
 
-    root.name should === (Some(List("Bob", "Smith")))
-    root.age should === (Some(26))
-    root.address should === (Some(Address(Some(31), Some("Main St"))))
+    root.name should ===(Some(List("Bob", "Smith")))
+    root.age should ===(Some(26))
+    root.address should ===(Some(Address(Some(31), Some("Main St"))))
     root.erdosNumber === (Some(123))
   }
 
@@ -324,10 +328,10 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     import io.circe.syntax._
 
     val root = Root(Some(Root.CountryEnums.NZ))
-    root.asJson should beSameJsonAs ("""
-      |{
-      |  "country": "NZ"
-      |}
+    root.asJson should beSameJsonAs("""
+                                      |{
+                                      |  "country": "NZ"
+                                      |}
     """.stripMargin)
   }
 
@@ -352,7 +356,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
       """.stripMargin
     val root = parser.decode[Root](json).toOption.get
 
-    root.country should === (Some(Root.CountryEnums.NZ))
+    root.country should ===(Some(Root.CountryEnums.NZ))
   }
 
   it should "encode UUID type" in {
@@ -374,7 +378,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     val uuid = "38400000-8cf0-11bd-b23e-10b96e4ef00d"
     val root = Root(Some(UUID.fromString(uuid)))
-    root.asJson should beSameJsonAs (s"""
+    root.asJson should beSameJsonAs(s"""
                                        |{
                                        |  "id": "$uuid"
                                        |}
@@ -400,13 +404,13 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     val uuid = "38400000-8cf0-11bd-b23e-10b96e4ef00d"
     val json =
       s"""
-        |{
-        |  "id": "$uuid"
-        |}
+         |{
+         |  "id": "$uuid"
+         |}
       """.stripMargin
     val root = parser.decode[Root](json).toOption.get
 
-    root.id should === (Some(UUID.fromString(uuid)))
+    root.id should ===(Some(UUID.fromString(uuid)))
   }
 
   it should "encode ZonedDateTime type" in {
@@ -428,10 +432,10 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     val dateTime = "2017-01-01T10:00:00.001Z"
     val root = Root(Some(ZonedDateTime.parse(dateTime)))
-    root.asJson should beSameJsonAs (s"""
-                                        |{
-                                        |  "createdAt": "$dateTime"
-                                        |}
+    root.asJson should beSameJsonAs(s"""
+                                       |{
+                                       |  "createdAt": "$dateTime"
+                                       |}
                                      """.stripMargin)
   }
 
@@ -460,7 +464,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
       """.stripMargin
     val root = parser.decode[Root](json).toOption.get
 
-    root.createdAt should === (Some(ZonedDateTime.parse(dateTime)))
+    root.createdAt should ===(Some(ZonedDateTime.parse(dateTime)))
   }
 
   it should "return an error on decoding for datetime with wrong format" in {
@@ -488,10 +492,13 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
       """.stripMargin
     val root = parser.decode[Root](json)
 
-    root should be ('left)
+    root should be('left)
     root.left.get match {
-      case d: DecodingFailure => d.getMessage should === ("ZonedDateTime (Text 'wrongDateTime' could not be parsed at index 0): DownField(createdAt)")
-      case e@_ => fail(s"Wrong error type: ${e.getClass.getName}")
+      case d: DecodingFailure =>
+        d.getMessage should ===(
+          "ZonedDateTime (Text 'wrongDateTime' could not be parsed at index 0): DownField(createdAt)"
+        )
+      case e @ _ => fail(s"Wrong error type: ${e.getClass.getName}")
     }
   }
 
@@ -514,7 +521,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
         |  "country": "oops"
         |}
       """.stripMargin
-    parser.decode[Root](json).isLeft shouldBe (true)
+    parser.decode[Root](json).isLeft shouldBe true
   }
 
   it should "encode any wrappers" in {
@@ -530,7 +537,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     import Foo._
     import Foo.Implicits._
 
-    val values = Map("a" -> 1, "b" -> List(1.1, 2.2), "c" -> Map( "d" -> "bar", "e" -> 3.14 ))
+    val values = Map("a" -> 1, "b" -> List(1.1, 2.2), "c" -> Map("d" -> "bar", "e" -> 3.14))
     val root = Root(Some(Root.Misc(values)))
 
     root.asJson should beSameJsonAs("""
@@ -541,7 +548,7 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
   }
 
   it should "encode any wrappers with array types (which need special handling)" in {
-      @fromSchemaJson("""
+    @fromSchemaJson("""
     {
       "type": "object",
       "properties": {
@@ -553,8 +560,16 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
     import Foo._
     import Foo.Implicits._
 
-    val values = Array(Array("a", 1), Array(1), Array(2.2), Array(3L), Array(true), Array(3.toShort),
-                       Array(3.0f), Array("a"), Array(2, 2.2))
+    val values = Array(Array("a", 1),
+                       Array(1),
+                       Array(2.2),
+                       Array(3L),
+                       Array(true),
+                       Array(3.toShort),
+                       Array(3.0f),
+                       Array("a"),
+                       Array(2, 2.2)
+    )
     val root = Root(Some(Root.Misc(values)))
 
     root.asJson should beSameJsonAs("""
@@ -585,8 +600,8 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
       """.stripMargin
 
     val root = parser.decode[Root](json).toOption.get
-    val values = Map("a" -> 1, "b" -> List(1, 2.0, "foo"), "c" -> Map( "d" -> "bar" ))
-    root.misc should === (Some(Root.Misc(values)))
+    val values = Map("a" -> 1, "b" -> List(1, 2.0, "foo"), "c" -> Map("d" -> "bar"))
+    root.misc should ===(Some(Root.Misc(values)))
   }
 
   it should "let you override encoders/decoders with higher priority implicits" in {
@@ -603,46 +618,48 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
 
     object Implicits extends Foo.LowPriorityImplicits {
       implicit val betterEncoder: Encoder[Foo.Root] = Encoder.instance { r => "override".asJson }
-      implicit val betterDecoder: Decoder[Foo.Root] = Decoder.instance((h: HCursor) =>
-        Either.right(Root(name=Some("override")))
-      )
+      implicit val betterDecoder: Decoder[Foo.Root] =
+        Decoder.instance((h: HCursor) => Either.right(Root(name = Some("override"))))
     }
     import Implicits._
 
     val root = parser.decode[Root]("""{ "name": "fred" }""").toOption.get
-    root.name should === (Some("override"))
-    root.copy(name=Some("james")).asJson should beSameJsonAs("\"override\"")
+    root.name should ===(Some("override"))
+    root.copy(name = Some("james")).asJson should beSameJsonAs("\"override\"")
   }
 
   "Params" should "support outPath and write out the generated code" in {
-    @fromSchemaResource("/simple.json", outPath=Some("/tmp/Simple.scala"))
+    @fromSchemaResource("/simple.json", outPath = Some("/tmp/Simple.scala"))
     object Simple
 
     val file = new File("/tmp/Simple.scala")
     file should exist
 
     val lines = Source.fromFile(file).getLines.toList
-    lines.head should === ("object Simple {")
+    lines.head should ===("object Simple {")
     lines.size should be >= 10
   }
 
   it should "support outPath with a package name and write out the generated code" in {
-    @fromSchemaResource("/simple.json", outPath=Some("/tmp/SimplePackage.scala"), outPathPackage = Some("org.argus.simple"))
+    @fromSchemaResource("/simple.json",
+                        outPath = Some("/tmp/SimplePackage.scala"),
+                        outPathPackage = Some("org.argus.simple")
+    )
     object Simple
 
     val file = new File("/tmp/SimplePackage.scala")
     file should exist
 
     val lines = Source.fromFile(file).getLines.toList
-    lines.head should === ("package org.argus.simple;")
+    lines.head should ===("package org.argus.simple;")
     lines.size should be >= 10
   }
 
   it should "support name, and name the root element using it" in {
-    @fromSchemaResource("/simple.json", name="Person")
+    @fromSchemaResource("/simple.json", name = "Person")
     object Schema
 
-    Schema.Person(age=Some(42)).age should === (Some(42))
+    Schema.Person(age = Some(42)).age should ===(Some(42))
   }
 
   it should "support raw schema inclusion" in {
@@ -664,10 +681,12 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
         "Other": { "type": "object", "properties": { "id": { "type": "string" } } }
       }
     }
-    """, rawSchema = true)
+    """,
+                    rawSchema = true
+    )
     object Foo
 
-    Foo.schemaSource should === (expected)
+    Foo.schemaSource should ===(expected)
   }
 
   it should "generate HasSchemaSource instances" in {
@@ -687,10 +706,13 @@ class FromSchemaSpec extends AnyFlatSpec with Matchers with JsonMatchers {
         "name": { "type" : "string" }
       }
     }
-    """, rawSchema = true, runtime = true)
+    """,
+                    rawSchema = true,
+                    runtime = true
+    )
     object Foo
 
-    HasSchemaSource[Foo.Root].value should === (expected)
+    HasSchemaSource[Foo.Root].value should ===(expected)
   }
 
   "Complex example" should "work end to end" in {

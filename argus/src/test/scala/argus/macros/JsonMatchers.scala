@@ -4,7 +4,7 @@ import io.circe.argus.json.JsonDiff
 import org.scalactic.Equality
 import cats.syntax.either._
 import io.circe._
-import org.scalatest.matchers.{ MatchResult, Matcher }
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 // TODO Should refactor this into somewhere generally useful.
 trait JsonMatchers {
@@ -26,9 +26,9 @@ trait JsonMatchers {
   implicit val jsonEq = new Equality[Json] {
     def areEqual(a: Json, b: Any): Boolean =
       b match {
-        case c: Json => JsonDiff.diff(a, c) == Nil
+        case c: Json   => JsonDiff.diff(a, c) == Nil
         case c: String => JsonDiff.diff(a, parser.parse(c).toOption.get) == Nil
-        case _ => false
+        case _         => false
       }
   }
 

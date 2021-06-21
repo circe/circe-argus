@@ -6,7 +6,8 @@ import org.scalatest.matchers.should.Matchers
 class FromSchemaGenSpec extends AnyFlatSpec with Matchers {
 
   "fromSchemaString" should "build nested schemas (and name them after the field name)" in {
-    val code = FromSchemaGen.fromJsonString("""
+    val code = FromSchemaGen.fromJsonString(
+      """
       {
         "type": "object",
         "properties": {
@@ -28,43 +29,43 @@ class FromSchemaGenSpec extends AnyFlatSpec with Matchers {
 
     val triple = "\"\"\""
     val expected = s"""|package mypackage;
-                      |
-                      |object Foo {
-                      |  class enum extends scala.annotation.StaticAnnotation;
-                      |  class union extends scala.annotation.StaticAnnotation;
-                      |  val schemaSource: String = $triple
-                      |      {
-                      |        "type": "object",
-                      |        "properties": {
-                      |          "a": {
-                      |            "type": "object",
-                      |            "properties": {
-                      |              "b" : { "type": "string" }
-                      |            }
-                      |          }
-                      |        }
-                      |      }
-                      |      $triple;
-                      |  implicit val RootHasSchemaSource: _root_.io.circe.argus.HasSchemaSource[Root] = _root_.io.circe.argus.HasSchemaSource.instance[Root]($triple
-                      |      {
-                      |        "type": "object",
-                      |        "properties": {
-                      |          "a": {
-                      |            "type": "object",
-                      |            "properties": {
-                      |              "b" : { "type": "string" }
-                      |            }
-                      |          }
-                      |        }
-                      |      }
-                      |      $triple);
-                      |  case class Root(a: Option[Root.A] = None);
-                      |  object Root {
-                      |    case class A(b: Option[String] = None)
-                      |  }
-                      |}""".stripMargin
+                       |
+                       |object Foo {
+                       |  class enum extends scala.annotation.StaticAnnotation;
+                       |  class union extends scala.annotation.StaticAnnotation;
+                       |  val schemaSource: String = $triple
+                       |      {
+                       |        "type": "object",
+                       |        "properties": {
+                       |          "a": {
+                       |            "type": "object",
+                       |            "properties": {
+                       |              "b" : { "type": "string" }
+                       |            }
+                       |          }
+                       |        }
+                       |      }
+                       |      $triple;
+                       |  implicit val RootHasSchemaSource: _root_.io.circe.argus.HasSchemaSource[Root] = _root_.io.circe.argus.HasSchemaSource.instance[Root]($triple
+                       |      {
+                       |        "type": "object",
+                       |        "properties": {
+                       |          "a": {
+                       |            "type": "object",
+                       |            "properties": {
+                       |              "b" : { "type": "string" }
+                       |            }
+                       |          }
+                       |        }
+                       |      }
+                       |      $triple);
+                       |  case class Root(a: Option[Root.A] = None);
+                       |  object Root {
+                       |    case class A(b: Option[String] = None)
+                       |  }
+                       |}""".stripMargin
 
-    code should === (expected)
+    code should ===(expected)
   }
 
   it should "build enum types" in {
@@ -76,7 +77,7 @@ class FromSchemaGenSpec extends AnyFlatSpec with Matchers {
         }
       }
       """,
-      "Foo"
+                                            "Foo"
     )
 
     val expected = """|object Foo {
@@ -101,6 +102,6 @@ class FromSchemaGenSpec extends AnyFlatSpec with Matchers {
                       |  }
                       |}""".stripMargin
 
-    code should === (expected)
+    code should ===(expected)
   }
 }

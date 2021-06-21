@@ -2,7 +2,7 @@ package io.circe.argus
 
 /**
  * Supports abstraction over Argus-generated types that have a schema string associated with them.
- */ 
+ */
 trait HasSchemaSource[A] {
   def value: String
 }

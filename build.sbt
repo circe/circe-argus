@@ -1,19 +1,21 @@
 import ReleaseTransformations._
 
-crossScalaVersions in ThisBuild := Seq("2.12.14", "2.13.6")
-scalaVersion in ThisBuild := crossScalaVersions.value.last
-githubWorkflowJavaVersions in ThisBuild := Seq("adopt@1.8")
-githubWorkflowPublishTargetBranches in ThisBuild := Nil
-githubWorkflowBuild in ThisBuild := Seq(
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
+ThisBuild / scalaVersion := crossScalaVersions.value.last
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowPublishTargetBranches := Nil
+ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(
     List("clean", "coverage", "test", "coverageReport"),
     id = None,
     name = Some("test")
   ),
   WorkflowStep.Use(
-    "codecov",
-    "codecov-action",
-    "v1"
+    UseRef.Public(
+      "codecov",
+      "codecov-action",
+      "v1"
+    )
   )
 )
 
@@ -34,29 +36,26 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n < 13 =>
-        Seq(
-          compilerPlugin(
-            "org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full))
+        Seq(compilerPlugin(("org.scalamacros" %% "paradise" % "2.1.1").cross(CrossVersion.full)))
       case _ => Seq.empty
     }
   },
   homepage := Some(url("https://github.com/aishfenton/Argus")),
-  licenses := Seq(
-    "MIT License" -> url("http://www.opensource.org/licenses/MIT")),
+  licenses := Seq("MIT License" -> url("http://www.opensource.org/licenses/MIT")),
   // NB: We put example schemas in main package since otherwise the macros can't run for test (since they
   // execute before test-classes is populated). But then we need to exclude them from packing.
-  mappings in (Compile, packageBin) ~= {
+  Compile / packageBin / mappings ~= {
     _.filter(!_._1.getName.endsWith(".json"))
   },
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+      Some("snapshots".at(nexus + "content/repositories/snapshots"))
     else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
   },
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := (_ => false),
   sonatypeProfileName := "com.github.aishfenton",
   pomExtra :=
@@ -90,12 +89,10 @@ lazy val commonSettings = Seq(
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _),
-                enableCrossBuild = true),
+    ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _),
-                enableCrossBuild = true),
+    ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges
   )
 )
@@ -126,7 +123,8 @@ lazy val runtime = project
   .settings(moduleName := "circe-argus-runtime")
   .settings(commonSettings: _*)
 
-lazy val root = (project in file("."))
+lazy val root = project
+  .in(file("."))
   .aggregate(argus, runtime)
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)

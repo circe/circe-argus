@@ -13,7 +13,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
   "mkEncoder()" should "make encoders for a given case class" in {
     val q"case class $name (..$params)" = q"case class Test(a: Int, b: String, c: Foo.Root)"
-    codecBuilder.mkEncoder(Ident(name), params) should === (q"""
+    codecBuilder.mkEncoder(Ident(name), params) should ===(q"""
       Encoder.instance((cc: Test) => Json.obj(
         "a" -> cc.a.asJson,
         "b" -> cc.b.asJson,
@@ -24,7 +24,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
   it should "reflect the path in the encoder's types" in {
     val (name, params) = (tq"Foo.Test", q"val a: Int")
-    codecBuilder.mkEncoder(name, List(params)) should === (q"""
+    codecBuilder.mkEncoder(name, List(params)) should ===(q"""
       Encoder.instance((cc: Foo.Test) => Json.obj("a" -> cc.a.asJson))
     """)
   }
@@ -32,14 +32,14 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
   "mkEncoderValDef()" should "make an implicit val to an encoder" in {
     val name = tq"Foo.Bar.Test"
 
-    codecBuilder.mkEncoderValDef(name, q"???") should === (q"""
+    codecBuilder.mkEncoderValDef(name, q"???") should ===(q"""
       implicit val FooBarTestEncoder: Encoder[Foo.Bar.Test] = ???
     """)
   }
 
   "mkDecoder()" should "make decoders for a given case class" in {
     val q"case class $name (..$params)" = q"case class Test(a: Option[Int], b: String, c: Option[Foo.Root])"
-    codecBuilder.mkDecoder(Ident(name), params) should === (q"""
+    codecBuilder.mkDecoder(Ident(name), params) should ===(q"""
       Decoder.instance((c: HCursor) => for {
         a <- c.downField("a").as[Option[Int]]
         b <- c.downField("b").as[String]
@@ -50,7 +50,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
   it should "reflect the path in decoder's types" in {
     val q"case class $_ (..$params)" = q"case class Test(a: Int)"
-    codecBuilder.mkDecoder(tq"Foo.Test", params) should === (q"""
+    codecBuilder.mkDecoder(tq"Foo.Test", params) should ===(q"""
       Decoder.instance((c: HCursor) => for { a <- c.downField("a").as[Int] } yield Foo.Test(a))
     """)
   }
@@ -58,7 +58,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
   "mkDecoderValDef()" should "make an implicit val to an decoder" in {
     val q"case class $name (..$params)" = q"case class Test(a: Int)"
 
-    codecBuilder.mkDecoderValDef(tq"Foo.Bar.Test", q"???") should === (q"""
+    codecBuilder.mkDecoderValDef(tq"Foo.Bar.Test", q"???") should ===(q"""
       implicit val FooBarTestDecoder: Decoder[Foo.Bar.Test] = ???
     """)
   }
@@ -72,7 +72,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
     val res = codecBuilder.mkUnionEncoder(tq"Foo", union)
 
-    res should === (q"""
+    res should ===(q"""
       Encoder.instance {
         case ut: FooInt => ut.x.asJson
         case ut: Root.FooString => ut.x.asJson
@@ -90,7 +90,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
     val res = codecBuilder.mkUnionDecoder(tq"Foo", union)
 
-    res should === (q"""
+    res should ===(q"""
       Decoder.instance((c: HCursor) => {
         c.as[Int].map((x) => FooInt(x)) orElse
         c.as[String].map((x) => Root.FooString(x)) orElse
@@ -106,7 +106,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
         Nil
 
     val res = codecBuilder.mkEnumEncoder(tq"Foo", enums)
-    res should === (q"""
+    res should ===(q"""
       Encoder.instance((e: Foo) => parser.parse(e.json).toOption.get)
     """)
   }
@@ -118,7 +118,7 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
         Nil
 
     val res = codecBuilder.mkEnumDecoder(tq"Foo", pairs)
-    res should === (q"""
+    res should ===(q"""
       Decoder.instance((c: HCursor) => for {
         json <- c.as[Json]
         singleton <- json match {
@@ -138,9 +138,12 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
     val res = codecBuilder.mkCodec(defs)
 
-    res collect extractCodecNameAndType should contain theSameElementsAs
-      List(("FooEncoder","Encoder[Foo]"), ("FooDecoder","Decoder[Foo]"), ("BarEncoder","Encoder[Bar]"),
-        ("BarDecoder","Decoder[Bar]"))
+    res.collect(extractCodecNameAndType) should contain theSameElementsAs
+      List(("FooEncoder", "Encoder[Foo]"),
+           ("FooDecoder", "Decoder[Foo]"),
+           ("BarEncoder", "Encoder[Bar]"),
+           ("BarDecoder", "Decoder[Bar]")
+      )
   }
 
   it should "ignore other definitions" in {
@@ -149,15 +152,15 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
         q"object A" ::
         Nil
 
-    val res = codecBuilder.mkCodec(defs) collect extractCodecNameAndType
+    val res = codecBuilder.mkCodec(defs).collect(extractCodecNameAndType)
     res should contain theSameElementsAs Nil
   }
 
   it should "work with nested case classes" in {
     val defs = List(q"object Root { object Foo { case class Bar(a: Int) } }")
     val res = codecBuilder.mkCodec(defs)
-    res collect extractCodecNameAndType should contain theSameElementsAs
-      List(("RootFooBarEncoder","Encoder[Root.Foo.Bar]"), ("RootFooBarDecoder","Decoder[Root.Foo.Bar]"))
+    res.collect(extractCodecNameAndType) should contain theSameElementsAs
+      List(("RootFooBarEncoder", "Encoder[Root.Foo.Bar]"), ("RootFooBarDecoder", "Decoder[Root.Foo.Bar]"))
   }
 
   it should "add an encoder/decoder for each @enum" in {
@@ -173,12 +176,12 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
 
     val res = codecBuilder.mkCodec(defs)
 
-    res collect extractCodecNameAndType should contain theSameElementsAs
-      ("FooEncoder","Encoder[Foo]") ::
-        ("FooDecoder","Decoder[Foo]") ::
-        Nil
+    res.collect(extractCodecNameAndType) should contain theSameElementsAs
+      ("FooEncoder", "Encoder[Foo]") ::
+      ("FooDecoder", "Decoder[Foo]") ::
+      Nil
 
-    val code = res map(showCode(_)) mkString("")
+    val code = res.map(showCode(_)).mkString("")
     code should include("parse(\"1\")")
     code should include("""parse("\"NZ\"")""")
   }
@@ -191,12 +194,12 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
         Nil
 
     val res = codecBuilder.mkCodec(defs)
-    res collect extractCodecNameAndType should contain theSameElementsAs
-      ("FooEncoder","Encoder[Foo]") ::
-        ("FooDecoder","Decoder[Foo]") ::
-        Nil
+    res.collect(extractCodecNameAndType) should contain theSameElementsAs
+      ("FooEncoder", "Encoder[Foo]") ::
+      ("FooDecoder", "Decoder[Foo]") ::
+      Nil
 
-    val code = res map(showCode(_)) mkString("")
+    val code = res.map(showCode(_)).mkString("")
     code should include("FooBarPerson(x)")
     code should include("FooInt(x)")
   }
@@ -208,12 +211,12 @@ class CirceCodecBuilderSpec extends AnyFlatSpec with Matchers with ASTMatchers {
         Nil
 
     val res = codecBuilder.mkCodec(defs)
-    res collect extractCodecNameAndType should contain allOf(
-      ("FooEncoder","Encoder[Foo]"),
-      ("FooDecoder","Decoder[Foo]")
+    (res.collect(extractCodecNameAndType) should contain).allOf(
+      ("FooEncoder", "Encoder[Foo]"),
+      ("FooDecoder", "Decoder[Foo]")
     )
 
-    val code = res map(showCode(_)) mkString("")
+    val code = res.map(showCode(_)).mkString("")
     code should include("wrapper.x.asJson(anyEncoder)")
     code should include("h.as[Any](anyDecoder)")
   }

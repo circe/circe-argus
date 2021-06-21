@@ -5,9 +5,7 @@ import scala.reflect.api.Universe
 
 private[macros] object ParamsASTHelper {
 
-  def paramsToMap[U <: Universe](u: U)(
-      nameAndDefaults: List[(String, Any)],
-      params: List[u.Tree]): Map[String, Any] = {
+  def paramsToMap[U <: Universe](u: U)(nameAndDefaults: List[(String, Any)], params: List[u.Tree]): Map[String, Any] = {
     import u._
 
     def toValue(param: Tree): Any = param match {
@@ -26,12 +24,12 @@ private[macros] object ParamsASTHelper {
     })
 
     require(positional.length <= nameAndDefaults.length,
-            "More position arguments than specified in: " + nameAndDefaults)
+            "More position arguments than specified in: " + nameAndDefaults
+    )
     val posValues = nameAndDefaults
       .zip(positional)
-      .map {
-        case ((name, default), param) =>
-          (name, toValue(param))
+      .map { case ((name, default), param) =>
+        (name, toValue(param))
       }
       .toMap
 

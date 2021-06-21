@@ -16,7 +16,7 @@ class SchemaSpec extends AnyFlatSpec with Matchers {
     val jsonStr = Source.fromInputStream(getClass.getResourceAsStream("/simple.json")).getLines.mkString("\n")
     val schema = Schema.fromResource("/simple.json")
 
-    schema shouldBe a [Root]
+    schema shouldBe a[Root]
     diffs(schema, jsonStr) shouldBe empty
   }
 
@@ -40,7 +40,7 @@ class SchemaSpec extends AnyFlatSpec with Matchers {
       enum <- country.schema.enum
     } yield enum
 
-    countryEnum should === (Some(List( "\"USA\"", "4", """{"a":"b"}""" )))
+    countryEnum should ===(Some(List("\"USA\"", "4", """{"a":"b"}""")))
   }
 
   it should "round trip more complex schemas" in {
@@ -74,7 +74,7 @@ class SchemaSpec extends AnyFlatSpec with Matchers {
       enum <- country.schema.format
     } yield enum
 
-    ageFormat should === (Some(Formats.Int64))
+    ageFormat should ===(Some(Formats.Int64))
   }
 
   it should "decode unknown format" in {
@@ -98,6 +98,6 @@ class SchemaSpec extends AnyFlatSpec with Matchers {
       enum <- country.schema.format
     } yield enum
 
-    ageFormat should === (Some(Formats.Unknown))
+    ageFormat should ===(Some(Formats.Unknown))
   }
 }
