@@ -2,7 +2,7 @@ package io.circe.argus.macros
 
 import io.circe.argus.schema._
 
-import scala.annotation.{StaticAnnotation, compileTimeOnly}
+import scala.annotation.{compileTimeOnly, StaticAnnotation}
 import scala.io.Source
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -13,80 +13,103 @@ object JsonEngs {
 }
 
 /**
-  * Augments the annotated object with cases classes that implement the given Json Schema
-  * @param json A string containing a Json schema
-  * @param debug Dumps the generated code to stdout. Useful for debugging.
-  * @param jsonEng The Json engine that we generate encode/decoders for. At the moment the only valid value is
-  *                Some(JsonEngs.Circe) or None
-  * @param outPath Optional path, that if specified writes the generated code to a file at that path (defaults to None,
-  *                so no file is written).
-  * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
-  *                       to the output file (defaults to None, so no package name is written).
-  * @param name The name used for the root case class that is generated. Defaults to "Root"
-  * @param rawSchema Includes the raw schema string in the companion object
-  * @param runtime Produces code for abstracting over Argus-generated types
-  * @param unionSuffix Indicates whether generated union type names should be
-  *                    suffixed with "Union".
-  * @param splitOnUnderscore Indicates whether generated names should treat
-  *                          underscores as token characters or split on them.
-  */
+ * Augments the annotated object with cases classes that implement the given Json Schema
+ * @param json A string containing a Json schema
+ * @param debug Dumps the generated code to stdout. Useful for debugging.
+ * @param jsonEng The Json engine that we generate encode/decoders for. At the moment the only valid value is
+ *                Some(JsonEngs.Circe) or None
+ * @param outPath Optional path, that if specified writes the generated code to a file at that path (defaults to None,
+ *                so no file is written).
+ * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
+ *                       to the output file (defaults to None, so no package name is written).
+ * @param name The name used for the root case class that is generated. Defaults to "Root"
+ * @param rawSchema Includes the raw schema string in the companion object
+ * @param runtime Produces code for abstracting over Argus-generated types
+ * @param unionSuffix Indicates whether generated union type names should be
+ *                    suffixed with "Union".
+ * @param splitOnUnderscore Indicates whether generated names should treat
+ *                          underscores as token characters or split on them.
+ */
 @compileTimeOnly("You must enable the macro paradise plugin.")
-class fromSchemaJson(json: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
-                     outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                     runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false) extends StaticAnnotation {
+class fromSchemaJson(json: String,
+                     debug: Boolean = false,
+                     jsonEng: Option[JsonEng] = None,
+                     outPath: Option[String] = None,
+                     outPathPackage: Option[String] = None,
+                     name: String = "Root",
+                     rawSchema: Boolean = false,
+                     runtime: Boolean = false,
+                     unionSuffix: Boolean = true,
+                     splitOnUnderscore: Boolean = false
+) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
 /**
-  * Same as fromSchemaJson, but loads the json schema from the given resource path
-  * @param path Path to schema file within resources
-  * @param debug Dumps the generated code to stdout. Useful for debugging.
-  * @param jsonEng The Json engine that we generate encode/decoders for. At the moment the only valid value is
-  *                Some(JsonEngs.Circe) or None
-  * @param outPath Optional path, that if specified writes the generated code to a file at that path (defaults to None,
-  *                so no file is written).
-  * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
-  *                       to the output file (defaults to None, so no package name is written).
-  * @param name The name used for the root case class that is generated. Defaults to "Root"
-  * @param rawSchema Includes the raw schema string in the companion object
-  * @param runtime Produces code for abstracting over Argus-generated types
-  * @param unionSuffix Indicates whether generated union type names should be
-  *                    suffixed with "Union".
-  * @param splitOnUnderscore Indicates whether generated names should treat
-  *                          underscores as token characters or split on them.
-  */
+ * Same as fromSchemaJson, but loads the json schema from the given resource path
+ * @param path Path to schema file within resources
+ * @param debug Dumps the generated code to stdout. Useful for debugging.
+ * @param jsonEng The Json engine that we generate encode/decoders for. At the moment the only valid value is
+ *                Some(JsonEngs.Circe) or None
+ * @param outPath Optional path, that if specified writes the generated code to a file at that path (defaults to None,
+ *                so no file is written).
+ * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
+ *                       to the output file (defaults to None, so no package name is written).
+ * @param name The name used for the root case class that is generated. Defaults to "Root"
+ * @param rawSchema Includes the raw schema string in the companion object
+ * @param runtime Produces code for abstracting over Argus-generated types
+ * @param unionSuffix Indicates whether generated union type names should be
+ *                    suffixed with "Union".
+ * @param splitOnUnderscore Indicates whether generated names should treat
+ *                          underscores as token characters or split on them.
+ */
 @compileTimeOnly("You must enable the macro paradise plugin.")
-class fromSchemaResource(path: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String] = None,
-                         outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                         runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false) extends StaticAnnotation {
+class fromSchemaResource(path: String,
+                         debug: Boolean = false,
+                         jsonEng: Option[JsonEng] = None,
+                         outPath: Option[String] = None,
+                         outPathPackage: Option[String] = None,
+                         name: String = "Root",
+                         rawSchema: Boolean = false,
+                         runtime: Boolean = false,
+                         unionSuffix: Boolean = true,
+                         splitOnUnderscore: Boolean = false
+) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
 
 /**
-  * Same as fromSchemaJson, but loads the json schema from the given file path.
-  * @param url URL string to resource containing the json schema
-  * @param debug Dumps the generated code to stdout. Useful for debugging.
-  * @param jsonEng The Json engine that we generate encode/decoders for. At the moment the only valid value is
-  *                Some(JsonEngs.Circe) or None
-  * @param outPath Optional path, that if specified writes the generated code to a file at that path (defaults to None,
-  *                so no file is written).
-  * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
-  *                       to the output file (defaults to None, so no package name is written).
-  * @param name The name used for the root case class that is generated. Defaults to "Root"
-  * @param rawSchema Includes the raw schema string in the companion object
-  * @param runtime Produces code for abstracting over Argus-generated types
-  * @param unionSuffix Indicates whether generated union type names should be
-  *                    suffixed with "Union".
-  * @param splitOnUnderscore Indicates whether generated names should treat
-  *                          underscores as token characters or split on them.
-  */
+ * Same as fromSchemaJson, but loads the json schema from the given file path.
+ * @param url URL string to resource containing the json schema
+ * @param debug Dumps the generated code to stdout. Useful for debugging.
+ * @param jsonEng The Json engine that we generate encode/decoders for. At the moment the only valid value is
+ *                Some(JsonEngs.Circe) or None
+ * @param outPath Optional path, that if specified writes the generated code to a file at that path (defaults to None,
+ *                so no file is written).
+ * @param outPathPackage Optional package name, that if specified and if outPath also specified writes the package name
+ *                       to the output file (defaults to None, so no package name is written).
+ * @param name The name used for the root case class that is generated. Defaults to "Root"
+ * @param rawSchema Includes the raw schema string in the companion object
+ * @param runtime Produces code for abstracting over Argus-generated types
+ * @param unionSuffix Indicates whether generated union type names should be
+ *                    suffixed with "Union".
+ * @param splitOnUnderscore Indicates whether generated names should treat
+ *                          underscores as token characters or split on them.
+ */
 @compileTimeOnly("You must enable the macro paradise plugin.")
-class fromSchemaURL(url: String, debug: Boolean = false, jsonEng: Option[JsonEng] = None, outPath: Option[String],
-                    outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-                    runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false) extends StaticAnnotation {
+class fromSchemaURL(url: String,
+                    debug: Boolean = false,
+                    jsonEng: Option[JsonEng] = None,
+                    outPath: Option[String],
+                    outPathPackage: Option[String] = None,
+                    name: String = "Root",
+                    rawSchema: Boolean = false,
+                    runtime: Boolean = false,
+                    unionSuffix: Boolean = true,
+                    splitOnUnderscore: Boolean = false
+) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro SchemaMacros.fromSchemaMacroImpl
 }
-
 
 class SchemaMacros(val c: Context) {
   import c.universe._
@@ -96,21 +119,36 @@ class SchemaMacros(val c: Context) {
   private val helpers = new ASTHelpers[c.universe.type](c.universe)
   import helpers._
 
-  case class Params(schema: Schema.Root, debug: Boolean, jsonEng: Option[JsonEng], outPath: Option[String],
-                    outPathPackage: Option[String], name: String, rawSchema: Option[String],
-                    runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false)
+  case class Params(schema: Schema.Root,
+                    debug: Boolean,
+                    jsonEng: Option[JsonEng],
+                    outPath: Option[String],
+                    outPathPackage: Option[String],
+                    name: String,
+                    rawSchema: Option[String],
+                    runtime: Boolean = false,
+                    unionSuffix: Boolean = true,
+                    splitOnUnderscore: Boolean = false
+  )
 
   private def extractParams(prefix: Tree): Params = {
     val q"new $name (..$paramASTs)" = prefix
     val (Ident(TypeName(fn: String))) = name
 
     val commonParams = ("debug", false) :: ("jsonEng", q"Some(JsonEngs.Circe)") :: ("outPath", None) ::
-      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: ("unionSuffix", true) :: ("splitOnUnderscore", false) :: Nil
+      ("outPathPackage", None) :: ("name", "Root") :: ("rawSchema", false) :: ("runtime", false) :: ("unionSuffix",
+                                                                                                     true
+      ) :: ("splitOnUnderscore", false) :: Nil
 
-    val (params, schemaString)= fn match {
+    val (params, schemaString) = fn match {
       case "fromSchemaResource" => {
         val params = paramsToMap(("path", "Path missing") :: commonParams, paramASTs)
-        (params, Source.fromInputStream(getClass.getResourceAsStream(params("path").asInstanceOf[String])).getLines().mkString("\n"))
+        (params,
+         Source
+           .fromInputStream(getClass.getResourceAsStream(params("path").asInstanceOf[String]))
+           .getLines()
+           .mkString("\n")
+        )
       }
       case "fromSchemaURL" => {
         val params = paramsToMap(("url", "URL missing") :: commonParams, paramASTs)
@@ -162,8 +200,8 @@ class SchemaMacros(val c: Context) {
   private def mkCodecs(jsonEng: Option[JsonEng], defs: List[Tree], path: List[String]): List[Tree] = {
     val codecDefs = jsonEng match {
       case Some(JsonEngs.Circe) => codecBuilder.mkCodec(defs, path)
-      case None => Nil
-      case a@_ => throw new Exception("Don't know JsonEng " + a)
+      case None                 => Nil
+      case a @ _                => throw new Exception("Don't know JsonEng " + a)
     }
 
     if (codecDefs.isEmpty)
@@ -179,12 +217,13 @@ class SchemaMacros(val c: Context) {
     val schema = params.schema
     val rawSchema = params.rawSchema.map(_.filter(_ != '\n'))
 
-    val result: Tree = annottees map (_.tree) match {
+    val result: Tree = annottees.map(_.tree) match {
 
       // Add definitions and codecs to annotated object
       case (objDef @ q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$stats }") :: _ => {
 
-        val (rootTpe, defs) = modelBuilder.mkSchemaDef(params.name, schema, Nil, params.unionSuffix, params.splitOnUnderscore)
+        val (rootTpe, defs) =
+          modelBuilder.mkSchemaDef(params.name, schema, Nil, params.unionSuffix, params.splitOnUnderscore)
 
         val rawSchemaDef = rawSchema.map { s =>
           q"""val schemaSource: String = $s"""
@@ -215,7 +254,7 @@ class SchemaMacros(val c: Context) {
             ..$rawSchemaDef
             ..$runtimeDefs
             ..$defs
-            ..${ mkCodecs(params.jsonEng, defs, tname.toString :: Nil) }
+            ..${mkCodecs(params.jsonEng, defs, tname.toString :: Nil)}
           }
         """
       }
@@ -237,9 +276,16 @@ object FromSchemaGen extends ModelBuilder[scala.reflect.api.JavaUniverse](scala.
 
   import u._
 
-  def fromJsonString(schemaString: String, objectName: String, jsonEng: Option[JsonEng] = None,
-               outPathPackage: Option[String] = None, name: String = "Root", rawSchema: Boolean = false,
-               runtime: Boolean = false, unionSuffix: Boolean = true, splitOnUnderscore: Boolean = false): String = {
+  def fromJsonString(schemaString: String,
+                     objectName: String,
+                     jsonEng: Option[JsonEng] = None,
+                     outPathPackage: Option[String] = None,
+                     name: String = "Root",
+                     rawSchema: Boolean = false,
+                     runtime: Boolean = false,
+                     unionSuffix: Boolean = true,
+                     splitOnUnderscore: Boolean = false
+  ): String = {
 
     val schema = Schema.fromJson(schemaString)
     val (rootTpe, defs) = mkSchemaDef(name, schema, Nil, unionSuffix, splitOnUnderscore)
@@ -271,7 +317,7 @@ object FromSchemaGen extends ModelBuilder[scala.reflect.api.JavaUniverse](scala.
         ..$rawSchemaDef
         ..$runtimeDefs
         ..$defs
-        ..${ mkCodecs(jsonEng, defs, objectName :: Nil) }
+        ..${mkCodecs(jsonEng, defs, objectName :: Nil)}
       }
     """
 
@@ -284,8 +330,8 @@ object FromSchemaGen extends ModelBuilder[scala.reflect.api.JavaUniverse](scala.
   private def mkCodecs(jsonEng: Option[JsonEng], defs: List[Tree], path: List[String]): List[Tree] = {
     val codecDefs = jsonEng match {
       case Some(JsonEngs.Circe) => codecBuilder.mkCodec(defs, path)
-      case None => Nil
-      case a@_ => throw new Exception("Don't know JsonEng " + a)
+      case None                 => Nil
+      case a @ _                => throw new Exception("Don't know JsonEng " + a)
     }
 
     if (codecDefs.isEmpty)
@@ -296,4 +342,3 @@ object FromSchemaGen extends ModelBuilder[scala.reflect.api.JavaUniverse](scala.
         Nil
   }
 }
-

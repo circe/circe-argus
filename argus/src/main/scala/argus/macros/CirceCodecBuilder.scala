@@ -3,8 +3,8 @@ package io.circe.argus.macros
 import scala.reflect.api.Universe
 
 /**
-  * @author Aish Fenton.
-  */
+ * @author Aish Fenton.
+ */
 class CirceCodecBuilder[U <: Universe](val u: U) extends CodecBuilder {
 
   import u._
@@ -12,9 +12,9 @@ class CirceCodecBuilder[U <: Universe](val u: U) extends CodecBuilder {
 
   val imports =
     q"import cats.syntax.either._" ::
-    q"import io.circe._" ::
-    q"import io.circe.syntax._" ::
-    Nil
+      q"import io.circe._" ::
+      q"import io.circe.syntax._" ::
+      Nil
 
   def inEncoder(typ: Tree) = tq"Encoder[$typ]"
 
@@ -62,7 +62,7 @@ class CirceCodecBuilder[U <: Universe](val u: U) extends CodecBuilder {
   """
 
   def mkUnionEncoder(typ: Tree, subTypes: List[(Tree, Tree)]): Tree = {
-    val caseDefs = subTypes.map { case(rawType, unionType) =>
+    val caseDefs = subTypes.map { case (rawType, unionType) =>
       cq"ut: $unionType => ut.x.asJson"
     }
 
@@ -75,7 +75,7 @@ class CirceCodecBuilder[U <: Universe](val u: U) extends CodecBuilder {
   def mkUnionDecoder(typ: Tree, subTypes: List[(Tree, Tree)]): Tree = {
     val (rt, ut) = subTypes.head
     val asDefs: Tree = subTypes.tail.foldLeft(q"c.as[$rt].map((x) => ${companionForType(ut)}(x))") {
-      case (s:Tree, (rt:Tree, ut: Tree)) => q"$s.orElse(c.as[$rt].map((x) => ${companionForType(ut)}(x)))"
+      case (s: Tree, (rt: Tree, ut: Tree)) => q"$s.orElse(c.as[$rt].map((x) => ${companionForType(ut)}(x)))"
     }
 
     q"""
@@ -89,7 +89,7 @@ class CirceCodecBuilder[U <: Universe](val u: U) extends CodecBuilder {
   }
 
   def mkEnumDecoder(typ: Tree, subTermPairs: List[(String, Tree)]): Tree = {
-    val caseDefs = subTermPairs.map { case(jsonStr, subTerm) =>
+    val caseDefs = subTermPairs.map { case (jsonStr, subTerm) =>
       cq"j if j == parser.parse($jsonStr).toOption.get => Either.right($subTerm)"
     }
 
