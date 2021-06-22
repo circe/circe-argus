@@ -102,7 +102,7 @@ object Schema {
   ) {
 
     def toJson = this.asJson
-    def toJsonString = this.asJson.pretty(printer)
+    def toJsonString = printer.print(this.asJson)
     val printer = Printer.spaces2.copy(dropNullValues = true)
 
     // Convenience method since any/all of are treated roughly the same by the generated code
