@@ -20,7 +20,7 @@ ThisBuild / githubWorkflowBuild := Seq(
 )
 
 lazy val Vers = new {
-  val circe = "0.14.1"
+  val circe = "0.14.6"
   val scalatest = "3.2.11"
 }
 
